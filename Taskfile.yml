@@ -1,0 +1,28 @@
+version: '3'
+tasks:
+  default:
+    desc: Defaults to 'tests:all'.
+    cmds:
+      - task: tests:all
+
+  deps:
+    desc: ??
+    cmds:
+      - docker-compose -f ./docker-compose.yml up -d
+
+  tests:all:
+    desc: Defaults to 'tests:all'.
+    deps:
+      - deps
+    cmds:
+      - task: tests:postgres
+
+  tests:postgres:
+    desc: Defaults to 'tests:all'.
+    cmds:
+      - cargo test --features with-postgres -- --nocapture
+
+  tests:tokio-postgres:
+    desc: Defaults to 'tests:all'.
+    cmds:
+      - cargo test --features with-tokio-postgres -- --nocapture
