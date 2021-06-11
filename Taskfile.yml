@@ -16,6 +16,7 @@ tasks:
       - deps
     cmds:
       - task: tests:postgres
+      - task: tests:tokio-postgres
 
   tests:postgres:
     desc: Defaults to 'tests:all'.

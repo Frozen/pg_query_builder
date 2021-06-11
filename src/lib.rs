@@ -5,7 +5,6 @@ mod qb;
 mod select;
 mod table;
 
-use filter::Condition;
 pub use filter::Filter;
 pub use op::Op;
 pub use select::Select;

@@ -4,11 +4,11 @@ use std::ops::Deref;
 
 #[cfg(any(feature = "with-postgres", feature = "with-tokio-postgres"))]
 pub enum Condition<'a> {
-    Eq(String, Box<dyn ToSql + Sync + 'a>),
-    Gt(String, Box<dyn ToSql + Sync + 'a>),
-    Gte(String, Box<dyn ToSql + Sync + 'a>),
-    Lt(String, Box<dyn ToSql + Sync + 'a>),
-    Lte(String, Box<dyn ToSql + Sync + 'a>),
+    Eq(String, Box<dyn ToSql + Sync + Send + 'a>),
+    Gt(String, Box<dyn ToSql + Sync + Send + 'a>),
+    Gte(String, Box<dyn ToSql + Sync + Send + 'a>),
+    Lt(String, Box<dyn ToSql + Sync + Send + 'a>),
+    Lte(String, Box<dyn ToSql + Sync + Send + 'a>),
     Or(Box<Condition<'a>>, Box<Condition<'a>>),
 }
 

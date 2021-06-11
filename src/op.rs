@@ -12,23 +12,23 @@ impl Op {
         Op { field: name.into() }
     }
 
-    pub fn eq<'a, T: ToSql + Sync + 'a>(&self, v: T) -> Condition<'a> {
+    pub fn eq<'a, T: ToSql + Sync + Send + 'a>(&self, v: T) -> Condition<'a> {
         Condition::Eq(self.field.clone(), Box::new(v))
     }
 
-    pub fn gt<'a, T: ToSql + Sync + 'a>(&self, v: T) -> Condition<'a> {
+    pub fn gt<'a, T: ToSql + Sync + Send + 'a>(&self, v: T) -> Condition<'a> {
         Condition::Gt(self.field.clone(), Box::new(v))
     }
 
-    pub fn gte<'a, T: ToSql + Sync + 'a>(&self, v: T) -> Condition<'a> {
+    pub fn gte<'a, T: ToSql + Sync + Send + 'a>(&self, v: T) -> Condition<'a> {
         Condition::Gte(self.field.clone(), Box::new(v))
     }
 
-    pub fn lt<'a, T: ToSql + Sync + 'a>(&self, v: T) -> Condition<'a> {
+    pub fn lt<'a, T: ToSql + Sync + Send + 'a>(&self, v: T) -> Condition<'a> {
         Condition::Lt(self.field.clone(), Box::new(v))
     }
 
-    pub fn lte<'a, T: ToSql + Sync + 'a>(&self, v: T) -> Condition<'a> {
+    pub fn lte<'a, T: ToSql + Sync + Send + 'a>(&self, v: T) -> Condition<'a> {
         Condition::Lte(self.field.clone(), Box::new(v))
     }
 }
