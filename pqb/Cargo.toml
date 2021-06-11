@@ -1,0 +1,17 @@
+[package]
+name = "pqb"
+version = "0.1.0"
+authors = ["Konstantin <k.potapov@softpro.com>"]
+edition = "2018"
+
+[dependencies]
+postgres = "0.19.1"
+tokio-postgres = "0.7.2"
+
+[dependencies.tokio]
+version = "1.6.1"
+features = ["macros"]
+
+[features]
+with-postgres=[]
+with-tokio-postgres=[]
