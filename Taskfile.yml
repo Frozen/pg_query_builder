@@ -6,7 +6,7 @@ tasks:
       - task: tests:all
 
   deps:
-    desc: ??
+    desc: run docker
     cmds:
       - docker-compose -f ./docker-compose.yml up -d
 

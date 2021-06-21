@@ -1,10 +1,10 @@
 #![cfg(feature = "with-postgres")]
 
-use pg_query_builder::Op;
-use pg_query_builder::Select;
-use pg_query_builder::Table;
-use pg_query_builder::{Fields, Filter};
 use postgres::{Client, Row};
+use pqb::Op;
+use pqb::Select;
+use pqb::Table;
+use pqb::{Fields, Filter};
 use std::ops::Deref;
 
 #[derive(Default, Debug, Clone)]

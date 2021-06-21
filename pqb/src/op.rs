@@ -2,6 +2,7 @@ use crate::filter::Condition;
 #[cfg(any(feature = "with-postgres", feature = "with-tokio-postgres"))]
 use postgres::types::ToSql;
 
+#[derive(Debug)]
 pub struct Op {
     field: String,
 }
@@ -30,5 +31,9 @@ impl Op {
 
     pub fn lte<'a, T: ToSql + Sync + Send + 'a>(&self, v: T) -> Condition<'a> {
         Condition::Lte(self.field.clone(), Box::new(v))
+    }
+
+    pub(crate) fn name(&self) -> &str {
+        &self.field
     }
 }

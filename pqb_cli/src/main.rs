@@ -58,11 +58,13 @@ fn main() {
 
             let tables: Tables = serde_yaml::from_reader(&mut s).unwrap();
 
+            println!("use pqb::{{Op, Table, Fields}};\n");
+
             for v in &tables.tables {
                 println!("{}", "#[derive(Debug, Clone)]");
-                println!("struct {} {{", &v.rs());
+                println!("pub(crate) struct {} {{", &v.rs());
                 for f in &v.fields {
-                    println!("\t{}: {},", f.rs(), f.tp());
+                    println!("\tpub(crate) {}: {},", f.rs(), f.tp());
                 }
 
                 println!("}}\n");

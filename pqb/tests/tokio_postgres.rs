@@ -1,6 +1,6 @@
 #![cfg(feature = "with-tokio-postgres")]
 
-use pg_query_builder::{Fields, Filter, Op, Select, Table};
+use pqb::{Fields, Filter, Op, Select, Table};
 use std::ops::Deref;
 use tokio_postgres::{Client, Error, NoTls};
 

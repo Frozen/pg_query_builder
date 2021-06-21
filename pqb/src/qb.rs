@@ -1,4 +1,5 @@
 use crate::filter::Condition;
+use crate::order::Direction;
 
 #[derive(Debug, Default)]
 struct Index {
@@ -31,7 +32,12 @@ impl QueryBuilder {
         }
     }
 
-    pub fn select(name: &str, fields: &[&'static str], conditions: &[Condition]) -> String {
+    pub fn select(
+        name: &str,
+        fields: &[&'static str],
+        conditions: &[Condition],
+        orders: &[Direction],
+    ) -> String {
         let mut s: Vec<String> = vec![];
         let mut ind = Index::default();
         for v in conditions.iter() {
@@ -49,6 +55,27 @@ impl QueryBuilder {
             q.push_str(&s.join(" AND "));
         }
 
+        if orders.len() > 0 {
+            q.push_str(" ORDER BY");
+            let s = orders
+                .iter()
+                .map(|v| match v {
+                    Direction::Asc(op) => {
+                        let mut s = op.name().to_string();
+                        s.push_str(" asc");
+                        s
+                    }
+                    Direction::Desc(op) => {
+                        let mut s = op.name().to_string();
+                        s.push_str(" desc");
+                        s
+                    }
+                })
+                .collect::<Vec<String>>()
+                .join(", ");
+            q.push_str(&s);
+        }
+
         return q;
     }
 }
@@ -63,19 +90,19 @@ mod tests {
     fn test() {
         assert_eq!(
             r#"SELECT id, name FROM "users""#,
-            QueryBuilder::select("users", &["id", "name"], &[])
+            QueryBuilder::select("users", &["id", "name"], &[], &[])
         );
         assert_eq!(
             r#"SELECT * FROM "users""#,
-            QueryBuilder::select("users", &[], &[])
+            QueryBuilder::select("users", &[], &[], &[])
         );
         assert_eq!(
             r#"SELECT id, name FROM "users""#,
-            QueryBuilder::select("users", &["id", "name"], &[])
+            QueryBuilder::select("users", &["id", "name"], &[], &[])
         );
         assert_eq!(
             r#"SELECT * FROM "users" WHERE id = $1"#,
-            QueryBuilder::select("users", &[], &[Op::new("id").eq(5)])
+            QueryBuilder::select("users", &[], &[Op::new("id").eq(5)], &[])
         );
         assert_eq!(
             r#"SELECT * FROM "users" WHERE ( id = $1 OR name = $2 )"#,
@@ -85,7 +112,8 @@ mod tests {
                 &[Filter::or(
                     Op::new("id").eq(5),
                     Op::new("name").eq("anything")
-                )]
+                )],
+                &[]
             )
         );
     }
