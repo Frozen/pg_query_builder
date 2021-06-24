@@ -11,6 +11,8 @@ pub struct Select<'a> {
     order: Order,
     table_name: String,
     fields: Vec<&'static str>,
+    limit: Option<usize>,
+    offset: Option<usize>,
 }
 
 impl<'a> Select<'a> {
@@ -29,6 +31,16 @@ impl<'a> Select<'a> {
         self
     }
 
+    pub fn limit(mut self, limit: usize) -> Select<'a> {
+        self.limit = Some(limit);
+        self
+    }
+
+    pub fn offset(mut self, offset: usize) -> Select<'a> {
+        self.offset = Some(offset);
+        self
+    }
+
     pub fn from<T: Table + Fields>() -> Select<'a> {
         Select::new(T::table_name(), T::fields())
     }
@@ -38,6 +50,8 @@ impl<'a> Select<'a> {
             table_name: table_name.into(),
             filter: Filter::new(),
             order: Order::new(),
+            limit: None,
+            offset: None,
             fields,
         }
     }
@@ -50,6 +64,8 @@ impl<'a> Select<'a> {
                 &self.fields,
                 &self.filter.conditions,
                 &self.order.into_direction(),
+                self.limit,
+                self.offset,
             ),
             &*self.filter.collect(),
         )
@@ -63,6 +79,8 @@ impl<'a> Select<'a> {
                 &self.fields,
                 &self.filter.conditions,
                 &self.order.into_direction(),
+                self.limit,
+                self.offset,
             ),
             &*self.filter.collect(),
         )

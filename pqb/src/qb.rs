@@ -37,6 +37,8 @@ impl QueryBuilder {
         fields: &[&'static str],
         conditions: &[Condition],
         orders: &[Direction],
+        limit: Option<usize>,
+        offset: Option<usize>,
     ) -> String {
         let mut s: Vec<String> = vec![];
         let mut ind = Index::default();
@@ -56,7 +58,7 @@ impl QueryBuilder {
         }
 
         if orders.len() > 0 {
-            q.push_str(" ORDER BY");
+            q.push_str(" ORDER BY ");
             let s = orders
                 .iter()
                 .map(|v| match v {
@@ -76,33 +78,51 @@ impl QueryBuilder {
             q.push_str(&s);
         }
 
+        if let Some(v) = limit {
+            q.push_str(" LIMIT ");
+            q.push_str(&v.to_string());
+        }
+
+        if let Some(v) = offset {
+            q.push_str(" OFFSET ");
+            q.push_str(&v.to_string());
+        }
+
         return q;
     }
 }
 
 #[cfg(test)]
 mod tests {
+    use crate::order::Direction;
     use crate::qb::QueryBuilder;
     use crate::{Filter, Op};
 
-    #[cfg(feature = "with-postgres")]
+    #[cfg(any(feature = "with-postgres", feature = "with-tokio-postgres"))]
     #[test]
     fn test() {
         assert_eq!(
-            r#"SELECT id, name FROM "users""#,
-            QueryBuilder::select("users", &["id", "name"], &[], &[])
+            r#"SELECT id, name FROM "users" ORDER BY id asc"#,
+            QueryBuilder::select(
+                "users",
+                &["id", "name"],
+                &[],
+                &[Direction::Asc(Op::new("id"))],
+                None,
+                None,
+            )
         );
         assert_eq!(
             r#"SELECT * FROM "users""#,
-            QueryBuilder::select("users", &[], &[], &[])
+            QueryBuilder::select("users", &[], &[], &[], None, None)
         );
         assert_eq!(
             r#"SELECT id, name FROM "users""#,
-            QueryBuilder::select("users", &["id", "name"], &[], &[])
+            QueryBuilder::select("users", &["id", "name"], &[], &[], None, None)
         );
         assert_eq!(
             r#"SELECT * FROM "users" WHERE id = $1"#,
-            QueryBuilder::select("users", &[], &[Op::new("id").eq(5)], &[])
+            QueryBuilder::select("users", &[], &[Op::new("id").eq(5)], &[], None, None)
         );
         assert_eq!(
             r#"SELECT * FROM "users" WHERE ( id = $1 OR name = $2 )"#,
@@ -113,7 +133,20 @@ mod tests {
                     Op::new("id").eq(5),
                     Op::new("name").eq("anything")
                 )],
-                &[]
+                &[],
+                None,
+                None
+            )
+        );
+        assert_eq!(
+            r#"SELECT id FROM "users" ORDER BY id desc LIMIT 10 OFFSET 20"#,
+            QueryBuilder::select(
+                "users",
+                &["id"],
+                &[],
+                &[Direction::Desc(Op::new("id"))],
+                10.into(),
+                20.into(),
             )
         );
     }

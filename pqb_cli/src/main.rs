@@ -58,10 +58,15 @@ fn main() {
 
             let tables: Tables = serde_yaml::from_reader(&mut s).unwrap();
 
+            println!("#![allow(dead_code)]");
             println!("use pqb::{{Op, Table, Fields}};\n");
+            println!("use std::borrow::Borrow;\n");
+            println!("use super::Client;\n");
+            println!("use super::DbError;\n");
+            println!("use serde::Serialize;\n");
 
             for v in &tables.tables {
-                println!("{}", "#[derive(Debug, Clone)]");
+                println!("{}", "#[derive(Debug, Clone, Serialize)]");
                 println!("pub(crate) struct {} {{", &v.rs());
                 for f in &v.fields {
                     println!("\tpub(crate) {}: {},", f.rs(), f.tp());
@@ -92,11 +97,102 @@ fn main() {
                     println!("\t}}")
                 }
                 println!("}}\n");
+
+                println!(
+                    "impl<T: Borrow<tokio_postgres::Row>> From<T> for {} {{",
+                    &v.rs()
+                );
+                println!("\tfn from(r: T) -> Self {{");
+                println!("\t\t{} {{", &v.rs());
+                for f in &v.fields {
+                    println!("\t\t\t{}: r.borrow().get(\"{}\"),", f.rs(), f.db());
+                }
+                println!("\t\t}}");
+                println!("\t}}");
+                println!("}}\n");
+
+                let mut s = String::new();
+                insert(&mut s, &v);
+                print!("{}", s);
             }
         }
         _ => {
             println!("{}", matches.usage());
             abort()
         }
+    }
+}
+
+fn insert(s: &mut String, t: &Table) {
+    s.push_str(&format!("impl {} {{\n", t.rs()));
+    s.push_str(&format!("\tpub(crate) async fn insert("));
+    let mut fields: Vec<String> = vec!["client: &mut Client".to_string()];
+    for f in &t.fields {
+        fields.push(format!(
+            "{}: &{}",
+            f.rs(),
+            if f.tp() == "String" {
+                "str".to_string()
+            } else {
+                f.tp().to_string()
+            }
+        ));
+    }
+    s.push_str(&format!(
+        "{}) -> Result<u64, DbError> {{\n",
+        &fields.join(", ")
+    ));
+
+    let mut ss1 = vec![];
+    for v in 1..=t.fields.len() {
+        ss1.push(format!("${}", v));
+    }
+    let mut ss2 = vec![];
+    for v in &t.fields {
+        ss2.push(format!("&{}", v.rs()));
+    }
+    s.push_str("\t\t");
+    s.push_str(&format!(
+        r#"client.execute("INSERT INTO {} VALUES({})", &[{}]).await"#,
+        t.db(),
+        ss1.join(", "),
+        ss2.join(", ")
+    ));
+    s.push_str("\n\t}");
+    s.push_str("\n");
+
+    s.push_str(
+        "\tpub(crate) async fn create(&self, mut client: &mut Client) -> Result<u64, DbError> {\n",
+    );
+
+    let mut ss3 = vec![];
+    for v in &t.fields {
+        ss3.push(format!("&self.{}", v.rs()));
+    }
+    s.push_str(&format!(
+        "\t\t{}::insert(&mut client, {}).await",
+        t.rs(),
+        ss3.join(", ")
+    ));
+
+    s.push_str("\n");
+    s.push_str("\t}\n");
+    s.push_str("\n}\n\n");
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::{insert, Field, Table};
+
+    #[test]
+    fn test_insert() {
+        let t = Table {
+            name: "User".to_string(),
+            fields: vec![Field {
+                0: "id; String; id".to_string(),
+            }],
+        };
+        let mut s = String::new();
+        insert(&mut s, &t);
     }
 }
