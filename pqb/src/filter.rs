@@ -1,3 +1,4 @@
+use crate::qb::Params;
 #[cfg(any(feature = "with-postgres", feature = "with-tokio-postgres"))]
 use postgres::types::ToSql;
 use std::ops::Deref;
@@ -13,16 +14,16 @@ pub enum Condition<'a> {
 }
 
 impl<'a> Condition<'a> {
-    fn conds(c: &'a Condition<'a>) -> Vec<&'a (dyn ToSql + Sync + 'a)> {
+    pub(crate) fn conds(c: Condition<'a>) -> Vec<Box<(dyn ToSql + Sync + 'a)>> {
         match c {
-            Condition::Eq(_, v) => vec![v.deref()],
-            Condition::Gt(_, v) => vec![v.deref()],
-            Condition::Gte(_, v) => vec![v.deref()],
-            Condition::Lt(_, v) => vec![v.deref()],
-            Condition::Lte(_, v) => vec![v.deref()],
+            Condition::Eq(_, v) => vec![v],
+            Condition::Gt(_, v) => vec![v],
+            Condition::Gte(_, v) => vec![v],
+            Condition::Lt(_, v) => vec![v],
+            Condition::Lte(_, v) => vec![v],
             Condition::Or(l, r) => {
-                let mut v1 = Condition::conds(&l.deref());
-                let v2 = Condition::conds(&r.deref());
+                let mut v1 = Condition::conds(*l);
+                let v2 = Condition::conds(*r);
                 v1.extend(v2);
                 v1
             }
@@ -43,12 +44,14 @@ impl<'a> Filter<'a> {
         self.conditions.push(c);
     }
 
-    pub(crate) fn collect(&'a self) -> Vec<&'a (dyn ToSql + Sync + 'a)> {
-        self.conditions
-            .iter()
-            .map(|e| Condition::conds(e))
-            .flatten()
-            .collect::<Vec<&(dyn ToSql + Sync + 'a)>>()
+    pub(crate) fn collect(self) -> Params<'a> {
+        Params::new(
+            self.conditions
+                .into_iter()
+                .map(|e| Condition::conds(e))
+                .flatten()
+                .collect::<Vec<_>>(),
+        )
     }
 
     pub fn or(c1: Condition<'a>, c2: Condition<'a>) -> Condition<'a> {

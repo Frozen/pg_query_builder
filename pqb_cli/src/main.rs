@@ -59,7 +59,7 @@ fn main() {
             let tables: Tables = serde_yaml::from_reader(&mut s).unwrap();
 
             println!("#![allow(dead_code)]");
-            println!("use pqb::{{Op, Table, Fields}};\n");
+            println!("use pqb::{{Op, Table, Fields, Update}};\n");
             println!("use std::borrow::Borrow;\n");
             println!("use super::Client;\n");
             println!("use super::DbError;\n");
@@ -113,6 +113,7 @@ fn main() {
 
                 let mut s = String::new();
                 insert(&mut s, &v);
+                update(&mut s, &v);
                 print!("{}", s);
             }
         }
@@ -142,6 +143,83 @@ fn insert(s: &mut String, t: &Table) {
         "{}) -> Result<u64, DbError> {{\n",
         &fields.join(", ")
     ));
+
+    let mut ss1 = vec![];
+    for v in 1..=t.fields.len() {
+        ss1.push(format!("${}", v));
+    }
+    let mut ss2 = vec![];
+    for v in &t.fields {
+        ss2.push(format!("&{}", v.rs()));
+    }
+    s.push_str("\t\t");
+    s.push_str(&format!(
+        r#"client.execute("INSERT INTO {} VALUES({})", &[{}]).await"#,
+        t.db(),
+        ss1.join(", "),
+        ss2.join(", ")
+    ));
+    s.push_str("\n\t}");
+    s.push_str("\n");
+
+    s.push_str(
+        "\tpub(crate) async fn create(&self, mut client: &mut Client) -> Result<u64, DbError> {\n",
+    );
+
+    let mut ss3 = vec![];
+    for v in &t.fields {
+        ss3.push(format!("&self.{}", v.rs()));
+    }
+    s.push_str(&format!(
+        "\t\t{}::insert(&mut client, {}).await",
+        t.rs(),
+        ss3.join(", ")
+    ));
+
+    s.push_str("\n");
+    s.push_str("\t}\n");
+    s.push_str("\n}\n\n");
+}
+
+fn update(s: &mut String, t: &Table) {
+    s.push_str(&format!("pub(crate) struct Update{} {{\n", t.rs()));
+    for f in &t.fields {
+        s.push_str(&format!("\t{}: Option<{}>,\n", f.rs(), f.tp()));
+    }
+    s.push_str("}\n");
+    s.push_str("\n");
+
+    s.push_str(&format!("impl {} {{\n", t.rs()));
+    s.push_str("\tpub(crate) async fn update() -> Update {");
+    s.push_str(&format!("\t\tUpdate::new(\"{}\")", t.db()));
+    s.push_str("\t}\n");
+    s.push_str("}\n");
+    s.push_str("\n");
+    return;
+
+    s.push_str(&format!(
+        "\tpub(crate) async fn update(client: &mut Client, t: &Update{}, q: &Select<'a>) -> Result<i64, Error) {{",
+        t.rs()
+    ));
+    // let mut fields: Vec<String> = vec![
+    //     "client: &mut Client".to_string(),
+    //     format!("t: &Update{}", t.rs()),
+    // ];
+    // for f in &t.fields {
+    //     fields.push(format!(
+    //         "{}: &{}",
+    //         f.rs(),
+    //         if f.tp() == "String" {
+    //             "str".to_string()
+    //         } else {
+    //             f.tp().to_string()
+    //         }
+    //     ));
+    // }
+    // s.push_str(&format!(
+    //     "{}) -> Result<u64, DbError> {{\n",
+    //     &fields.join(", ")
+    // ));
 
     let mut ss1 = vec![];
     for v in 1..=t.fields.len() {

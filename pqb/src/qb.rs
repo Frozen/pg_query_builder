@@ -1,15 +1,20 @@
 use crate::filter::Condition;
 use crate::order::Direction;
+use std::ops::Deref;
+use tokio_postgres::types::ToSql;
 
 #[derive(Debug, Default)]
 struct Index {
-    dx: i32,
+    dx: usize,
 }
 
 impl Index {
-    fn next(&mut self) -> i32 {
+    fn next(&mut self) -> usize {
         self.dx += 1;
         self.dx
+    }
+    pub fn new(idx: usize) -> Index {
+        Index { dx: idx }
     }
 }
 
@@ -42,7 +47,7 @@ impl QueryBuilder {
     ) -> String {
         let mut s: Vec<String> = vec![];
         let mut ind = Index::default();
-        for v in conditions.iter() {
+        for v in conditions {
             QueryBuilder::push(&mut s, &mut ind, v);
         }
 
@@ -90,17 +95,78 @@ impl QueryBuilder {
 
         return q;
     }
+
+    pub fn update<'a>(
+        name: &str,
+        fields: Vec<Condition<'a>>,
+        conditions: Vec<Condition<'a>>,
+    ) -> (String, Params<'a>) {
+        let mut s = format!("UPDATE {} SET ", name);
+        let mut wheres: Vec<Box<(dyn ToSql + Sync)>> = vec![];
+        let mut names = vec![];
+        for v in fields {
+            match v {
+                Condition::Eq(name, value) => {
+                    names.push(format!("{} = ${}", name, names.len() + 1));
+                    wheres.push(value);
+                }
+                _ => unreachable!(),
+            }
+        }
+
+        s.push_str(&format!("{}", names.join(", ")));
+
+        if wheres.len() + conditions.len() == 0 {
+            return (s, Params::empty());
+        }
+
+        let mut q = vec![];
+        let mut ind = Index::new(wheres.len());
+        for v in conditions {
+            QueryBuilder::push(&mut q, &mut ind, &v);
+            for e in Condition::conds(v) {
+                wheres.push(e);
+            }
+        }
+
+        if q.len() > 0 {
+            s.push_str(" WHERE ");
+            s.push_str(&q.join(" AND "));
+        }
+        return (s, Params(wheres));
+    }
+}
+
+pub(crate) struct Params<'a>(Vec<Box<(dyn ToSql + Sync + 'a)>>);
+
+impl<'a> Params<'a> {
+    pub(crate) fn params(self) -> Vec<Box<(dyn ToSql + Sync + 'a)>> {
+        self.0
+    }
+
+    fn empty() -> Params<'a> {
+        Params(vec![])
+    }
+
+    pub(crate) fn new(v: Vec<Box<(dyn ToSql + Sync + 'a)>>) -> Params {
+        Params(v)
+    }
+
+    pub(crate) fn len(&self) -> usize {
+        self.0.len()
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use crate::order::Direction;
-    use crate::qb::QueryBuilder;
+    use crate::qb::{Params, QueryBuilder};
+    use crate::update::Update;
     use crate::{Filter, Op};
 
     #[cfg(any(feature = "with-postgres", feature = "with-tokio-postgres"))]
     #[test]
-    fn test() {
+    fn test_select() {
         assert_eq!(
             r#"SELECT id, name FROM "users" ORDER BY id asc"#,
             QueryBuilder::select(
@@ -149,5 +215,17 @@ mod tests {
                 20.into(),
             )
         );
+    }
+
+    #[cfg(any(feature = "with-postgres", feature = "with-tokio-postgres"))]
+    #[test]
+    fn test_update() {
+        let u = Update::new("users")
+            .set(Op::new("id"), 5)
+            .filter(Op::new("id").eq(10))
+            .build();
+
+        assert_eq!("UPDATE users SET id = $1 WHERE id = $2", u.0);
+        assert_eq!(2, u.1.len());
     }
 }

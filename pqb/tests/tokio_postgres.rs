@@ -101,6 +101,9 @@ async fn test() {
         .map(|e| e.into())
         .unwrap();
 
+    // let xx = Person::update()
+    //     .set_
+
     println!("{:?}", rs)
     // And then check that we got back the same string we sent over.
     // let value: &str = rows[0].get(0);

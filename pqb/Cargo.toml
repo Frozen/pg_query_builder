@@ -1,6 +1,6 @@
 [package]
 name = "pqb"
-version = "0.1.0"
+version = "0.1.1"
 authors = ["Konstantin <phpconf@gmail.com>"]
 edition = "2018"
 
@@ -15,3 +15,4 @@ features = ["macros"]
 [features]
 with-postgres=[]
 with-tokio-postgres=[]
+default = ["with-tokio-postgres"]

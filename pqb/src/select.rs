@@ -5,6 +5,7 @@ use crate::table::{Fields, Table};
 use crate::Op;
 use postgres;
 use postgres::Row;
+use std::ops::Deref;
 
 pub struct Select<'a> {
     filter: Filter<'a>,
@@ -73,17 +74,21 @@ impl<'a> Select<'a> {
 
     #[cfg(feature = "with-tokio-postgres")]
     pub async fn query(self, c: &mut tokio_postgres::Client) -> Result<Vec<Row>, postgres::Error> {
-        c.query(
-            &*QueryBuilder::select(
-                &self.table_name,
-                &self.fields,
-                &self.filter.conditions,
-                &self.order.into_direction(),
-                self.limit,
-                self.offset,
-            ),
-            &*self.filter.collect(),
-        )
-        .await
+        let st = &*QueryBuilder::select(
+            &self.table_name,
+            &self.fields,
+            &self.filter.conditions,
+            &self.order.into_direction(),
+            self.limit,
+            self.offset,
+        );
+
+        let mut out = vec![];
+        let p = self.filter.collect().params();
+        for v in &p {
+            out.push(v.deref());
+        }
+
+        c.query(st, &out[..]).await
     }
 }
