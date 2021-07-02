@@ -190,7 +190,7 @@ fn update(s: &mut String, t: &Table) {
     s.push_str("\n");
 
     s.push_str(&format!("impl {} {{\n", t.rs()));
-    s.push_str("\tpub(crate) async fn update() -> Update {");
+    s.push_str("\tpub(crate) async fn update<'a>() -> Update<'a> {");
     s.push_str(&format!("\t\tUpdate::new(\"{}\")", t.db()));
     s.push_str("\t}\n");
     s.push_str("}\n");
