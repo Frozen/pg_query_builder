@@ -36,7 +36,7 @@ impl<'a> Update<'a> {
     pub async fn execute(self, c: &mut tokio_postgres::Client) -> Result<u64, postgres::Error> {
         let (q, f) = QueryBuilder::update(&self.table_name, self.fields, self.filter);
 
-        let mut out = vec![];
+        let mut out: Vec<&(dyn ToSql + Sync)> = vec![];
         let p = f.params();
         for v in &p {
             out.push(v.deref());

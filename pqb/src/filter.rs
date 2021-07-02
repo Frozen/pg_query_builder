@@ -14,7 +14,7 @@ pub enum Condition<'a> {
 }
 
 impl<'a> Condition<'a> {
-    pub(crate) fn conds(c: Condition<'a>) -> Vec<Box<(dyn ToSql + Sync + 'a)>> {
+    pub(crate) fn conds(c: Condition<'a>) -> Vec<Box<(dyn ToSql + Sync + Send + 'a)>> {
         match c {
             Condition::Eq(_, v) => vec![v],
             Condition::Gt(_, v) => vec![v],

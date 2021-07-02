@@ -6,6 +6,7 @@ use crate::Op;
 use postgres;
 use postgres::Row;
 use std::ops::Deref;
+use tokio_postgres::types::ToSql;
 
 pub struct Select<'a> {
     filter: Filter<'a>,
@@ -83,7 +84,7 @@ impl<'a> Select<'a> {
             self.offset,
         );
 
-        let mut out = vec![];
+        let mut out: Vec<&(dyn ToSql + Sync)> = vec![];
         let p = self.filter.collect().params();
         for v in &p {
             out.push(v.deref());

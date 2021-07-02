@@ -102,7 +102,7 @@ impl QueryBuilder {
         conditions: Vec<Condition<'a>>,
     ) -> (String, Params<'a>) {
         let mut s = format!("UPDATE {} SET ", name);
-        let mut wheres: Vec<Box<(dyn ToSql + Sync)>> = vec![];
+        let mut wheres: Vec<Box<(dyn ToSql + Send + Sync)>> = vec![];
         let mut names = vec![];
         for v in fields {
             match v {
@@ -137,10 +137,10 @@ impl QueryBuilder {
     }
 }
 
-pub(crate) struct Params<'a>(Vec<Box<(dyn ToSql + Sync + 'a)>>);
+pub(crate) struct Params<'a>(Vec<Box<(dyn ToSql + Sync + Send + 'a)>>);
 
 impl<'a> Params<'a> {
-    pub(crate) fn params(self) -> Vec<Box<(dyn ToSql + Sync + 'a)>> {
+    pub(crate) fn params(self) -> Vec<Box<(dyn ToSql + Sync + Send + 'a)>> {
         self.0
     }
 
@@ -148,7 +148,7 @@ impl<'a> Params<'a> {
         Params(vec![])
     }
 
-    pub(crate) fn new(v: Vec<Box<(dyn ToSql + Sync + 'a)>>) -> Params {
+    pub(crate) fn new(v: Vec<Box<(dyn ToSql + Sync + Send + 'a)>>) -> Params {
         Params(v)
     }
 
