@@ -67,9 +67,9 @@ fn main() {
 
             for v in &tables.tables {
                 println!("{}", "#[derive(Debug, Clone, Serialize)]");
-                println!("pub(crate) struct {} {{", &v.rs());
+                println!("pub struct {} {{", &v.rs());
                 for f in &v.fields {
-                    println!("\tpub(crate) {}: {},", f.rs(), f.tp());
+                    println!("\tpub {}: {},", f.rs(), f.tp());
                 }
 
                 println!("}}\n");
@@ -126,7 +126,7 @@ fn main() {
 
 fn insert(s: &mut String, t: &Table) {
     s.push_str(&format!("impl {} {{\n", t.rs()));
-    s.push_str(&format!("\tpub(crate) async fn insert("));
+    s.push_str(&format!("\tpub async fn insert("));
     let mut fields: Vec<String> = vec!["client: &mut Client".to_string()];
     for f in &t.fields {
         fields.push(format!(
@@ -162,9 +162,7 @@ fn insert(s: &mut String, t: &Table) {
     s.push_str("\n\t}");
     s.push_str("\n");
 
-    s.push_str(
-        "\tpub(crate) async fn create(&self, mut client: &mut Client) -> Result<u64, DbError> {\n",
-    );
+    s.push_str("\tpub async fn create(&self, mut client: &mut Client) -> Result<u64, DbError> {\n");
 
     let mut ss3 = vec![];
     for v in &t.fields {
@@ -182,7 +180,7 @@ fn insert(s: &mut String, t: &Table) {
 }
 
 fn update(s: &mut String, t: &Table) {
-    s.push_str(&format!("pub(crate) struct Update{} {{\n", t.rs()));
+    s.push_str(&format!("pub struct Update{} {{\n", t.rs()));
     for f in &t.fields {
         s.push_str(&format!("\t{}: Option<{}>,\n", f.rs(), f.tp()));
     }
@@ -190,7 +188,7 @@ fn update(s: &mut String, t: &Table) {
     s.push_str("\n");
 
     s.push_str(&format!("impl {} {{\n", t.rs()));
-    s.push_str("\tpub(crate) async fn update<'a>() -> Update<'a> {");
+    s.push_str("\tpub async fn update<'a>() -> Update<'a> {");
     s.push_str(&format!("\t\tUpdate::new(\"{}\")", t.db()));
     s.push_str("\t}\n");
     s.push_str("}\n");
@@ -198,7 +196,7 @@ fn update(s: &mut String, t: &Table) {
     return;
 
     s.push_str(&format!(
-        "\tpub(crate) async fn update(client: &mut Client, t: &Update{}, q: &Select<'a>) -> Result<i64, Error) {{",
+        "\tpub async fn update(client: &mut Client, t: &Update{}, q: &Select<'a>) -> Result<i64, Error) {{",
         t.rs()
     ));
     // let mut fields: Vec<String> = vec![
@@ -239,9 +237,7 @@ fn update(s: &mut String, t: &Table) {
     s.push_str("\n\t}");
     s.push_str("\n");
 
-    s.push_str(
-        "\tpub(crate) async fn create(&self, mut client: &mut Client) -> Result<u64, DbError> {\n",
-    );
+    s.push_str("\tpub async fn create(&self, mut client: &mut Client) -> Result<u64, DbError> {\n");
 
     let mut ss3 = vec![];
     for v in &t.fields {
