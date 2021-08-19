@@ -8,16 +8,19 @@ use std::process::abort;
 struct Field(String);
 
 impl Field {
+    // rust representations
     fn rs(&self) -> &str {
         self.0.split(";").next().unwrap_or("")
     }
 
+    // type
     pub fn tp(&self) -> &str {
         let mut x = self.0.split(";");
         x.next();
         x.next().unwrap_or("").trim()
     }
 
+    // storage name
     pub fn db(&self) -> &str {
         let mut x = self.0.split(";");
         x.next();
@@ -173,85 +176,53 @@ fn insert(s: &mut String, t: &Table) {
         t.rs(),
         ss3.join(", ")
     ));
+    drop(ss3);
 
     s.push_str("\n");
     s.push_str("\t}\n");
-    s.push_str("\n}\n\n");
+
+    s.push_str(&format!(
+        "\tpub fn into_update(self) -> Update{} {{\n",
+        &t.rs()
+    ));
+    s.push_str(&format!("\t\tUpdate{} {{\n", &t.rs()));
+    for v in &t.fields {
+        s.push_str(&format!("\t\t\t{}: Some(self.{}),\n", v.rs(), v.rs()));
+    }
+    s.push_str(&format!("\t\t}}\n"));
+    s.push_str("\t}\n");
+
+    s.push_str("}\n\n");
 }
 
 fn update(s: &mut String, t: &Table) {
     s.push_str(&format!("pub struct Update{} {{\n", t.rs()));
     for f in &t.fields {
-        s.push_str(&format!("\t{}: Option<{}>,\n", f.rs(), f.tp()));
+        s.push_str(&format!("\tpub {}: Option<{}>,\n", f.rs(), f.tp()));
     }
     s.push_str("}\n");
     s.push_str("\n");
 
     s.push_str(&format!("impl {} {{\n", t.rs()));
-    s.push_str("\tpub async fn update<'a>() -> Update<'a> {");
+    s.push_str("\tpub fn update<'a>() -> Update<'a> {");
     s.push_str(&format!("\t\tUpdate::new(\"{}\")", t.db()));
     s.push_str("\t}\n");
     s.push_str("}\n");
     s.push_str("\n");
-    return;
 
-    s.push_str(&format!(
-        "\tpub async fn update(client: &mut Client, t: &Update{}, q: &Select<'a>) -> Result<i64, Error) {{",
-        t.rs()
-    ));
-    // let mut fields: Vec<String> = vec![
-    //     "client: &mut Client".to_string(),
-    //     format!("t: &Update{}", t.rs()),
-    // ];
-    // for f in &t.fields {
-    //     fields.push(format!(
-    //         "{}: &{}",
-    //         f.rs(),
-    //         if f.tp() == "String" {
-    //             "str".to_string()
-    //         } else {
-    //             f.tp().to_string()
-    //         }
-    //     ));
-    // }
-    // s.push_str(&format!(
-    //     "{}) -> Result<u64, DbError> {{\n",
-    //     &fields.join(", ")
-    // ));
-
-    let mut ss1 = vec![];
-    for v in 1..=t.fields.len() {
-        ss1.push(format!("${}", v));
+    s.push_str(&format!("impl Update{} {{\n", t.rs()));
+    s.push_str(&format!("\tpub fn into_filter<'a>(self) -> Update<'a>{{\n"));
+    s.push_str(&format!("\t\tlet mut q = {}::update();\n", t.rs()));
+    for f in &t.fields {
+        s.push_str(&format!("\t\tif let Some(v) = self.{} {{\n", f.rs()));
+        s.push_str(&format!("\t\t\t q = q.set({}::{}(), v);\n", t.rs(), f.rs()));
+        s.push_str("\t\t}\n");
     }
-    let mut ss2 = vec![];
-    for v in &t.fields {
-        ss2.push(format!("&{}", v.rs()));
-    }
-    s.push_str("\t\t");
-    s.push_str(&format!(
-        r#"client.execute("INSERT INTO {} VALUES({})", &[{}]).await"#,
-        t.db(),
-        ss1.join(", "),
-        ss2.join(", ")
-    ));
-    s.push_str("\n\t}");
-    s.push_str("\n");
-
-    s.push_str("\tpub async fn create(&self, mut client: &mut Client) -> Result<u64, DbError> {\n");
-
-    let mut ss3 = vec![];
-    for v in &t.fields {
-        ss3.push(format!("&self.{}", v.rs()));
-    }
-    s.push_str(&format!(
-        "\t\t{}::insert(&mut client, {}).await",
-        t.rs(),
-        ss3.join(", ")
-    ));
-
-    s.push_str("\n");
+    s.push_str("\t\tq\n");
     s.push_str("\t}\n");
-    s.push_str("\n}\n\n");
+    s.push_str("}\n");
+
+    return;
 }
 
 #[cfg(test)]
