@@ -101,6 +101,13 @@ async fn test() {
         .map(|e| e.into())
         .unwrap();
 
+    let cnt = Select::from::<Person>()
+        .filter(Person::name().eq("bla"))
+        .count()
+        .query(&mut client)
+        .await
+        .unwrap();
+
     // let xx = Person::update()
     //     .set_
 

@@ -1,3 +1,4 @@
+mod count;
 mod filter;
 mod meta;
 mod op;

@@ -1,3 +1,4 @@
+use crate::count::Count;
 use crate::filter::{Condition, Filter};
 use crate::order::Order;
 use crate::qb::QueryBuilder;
@@ -56,6 +57,23 @@ impl<'a> Select<'a> {
             offset: None,
             fields,
         }
+    }
+
+    pub fn count(self) -> Count<'a> {
+        Count::new(self)
+    }
+
+    pub(crate) fn build(self) -> (String, Vec<Box<(dyn ToSql + Sync + Send + 'a)>>) {
+        let st = &*QueryBuilder::select(
+            &self.table_name,
+            &self.fields,
+            &self.filter.conditions,
+            &self.order.into_direction(),
+            self.limit,
+            self.offset,
+        );
+        let p = self.filter.collect().params();
+        (st.to_string(), p)
     }
 
     #[cfg(feature = "with-postgres")]
