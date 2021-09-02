@@ -24,6 +24,17 @@ impl<'a> Select<'a> {
         self
     }
 
+    pub fn filter_some<T>(
+        mut self,
+        e: Option<T>,
+        f: impl FnOnce(T) -> Condition<'a>,
+    ) -> Select<'a> {
+        match e {
+            Some(v) => self.filter(f(v)),
+            None => self,
+        }
+    }
+
     pub fn order_desc(mut self, e: Op) -> Select<'a> {
         self.order.push_desc(e);
         self

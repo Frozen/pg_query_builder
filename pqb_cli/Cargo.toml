@@ -1,6 +1,6 @@
 [package]
 name = "pqb_cli"
-version = "0.1.2"
+version = "0.1.5"
 authors = ["Konstantin <phpconf@gmail.com>"]
 edition = "2018"
 

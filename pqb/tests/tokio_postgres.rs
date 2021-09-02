@@ -101,6 +101,14 @@ async fn test() {
         .map(|e| e.into())
         .unwrap();
 
+    let rs: Rows<Vec<Person>> = Select::from::<Person>()
+        .filter(Filter::or(Person::name().eq("bla"), Person::id().eq(5i64)))
+        .filter_some(Some("bla"), |e| Person::name().eq(e))
+        .query(&mut client)
+        .await
+        .map(|e| e.into())
+        .unwrap();
+
     let cnt = Select::from::<Person>()
         .filter(Person::name().eq("bla"))
         .count()
