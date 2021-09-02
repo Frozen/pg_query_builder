@@ -196,6 +196,7 @@ fn insert(s: &mut String, t: &Table) {
 }
 
 fn update(s: &mut String, t: &Table) {
+    s.push_str("#[derive(Debug, Default)]\n");
     s.push_str(&format!("pub struct Update{} {{\n", t.rs()));
     for f in &t.fields {
         s.push_str(&format!("\tpub {}: Option<{}>,\n", f.rs(), f.tp()));
